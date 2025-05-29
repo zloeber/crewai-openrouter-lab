@@ -1,0 +1,15 @@
+.venv/
+venv
+venv/
+*.db
+.vscode/
+.vs
+.vs/
+.vs/*
+vscode
+.env
+__pycache__
+__pycache__/*
+chainlit.md
+.chainlit
+crewai_storage
