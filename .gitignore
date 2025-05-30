@@ -13,3 +13,4 @@ __pycache__/*
 chainlit.md
 .chainlit
 crewai_storage
+*.log

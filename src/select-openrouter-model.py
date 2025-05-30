@@ -22,15 +22,14 @@ python -m src.select-openrouter-model \
 
 """
 
-import json
 import re
 
 import click
 from dotenv import load_dotenv
 
-from src.common.logging import AppLogger, LoggerConfig
 from src.openrouter_client.client import OpenRouterClient
 from src.openrouter_client.models import ModelRequirements
+from src.utils.logging import LoggerConfig, UnifiedLogger
 
 
 @click.command()
@@ -96,13 +95,21 @@ def main(
     name_filter: str,
 ) -> None:
     """Select and display AI models based on specified requirements using OpenRouter."""
-    log = AppLogger(
-        LoggerConfig(log_level=log_level, minimal_console=True)
-    ).get_logger()
+    # Initialize unified logger
+    logger = UnifiedLogger(
+        LoggerConfig(
+            log_level=log_level,
+            log_to_file=True,
+            log_file_path="openrouter_model_selection.log",
+            use_rich_console=True,
+            minimal_console=output == "brief",
+            terse=True,
+        )
+    )
 
     load_dotenv(override=True)
-    # Initialize the client
-    client = OpenRouterClient()
+    # Initialize the client with the logger
+    client = OpenRouterClient(logger=logger)
 
     # Parse comma-separated strings into lists
     feature_list = (
@@ -131,35 +138,35 @@ def main(
         ]
 
     if output == "text":
-        log.debug(f"Model selection requirements: {requirements}")
+        logger.debug(f"Model selection requirements: {requirements}")
         if len(models) > 0:
             for i, model in enumerate(models, 1):
                 # Extract model size parameter using regex
                 parameters = re.search(r"\s(\d+(?:\.\d+)?B)\s", model.name)
                 param_size = parameters.group(1) if parameters else "N/A"
 
-                log.info(f"{i}. {model.name} (ID: {model.id})")
-                log.info(f"  - Model size: {param_size}")
-                log.info(f"  - Context length: {model.context_length}")
-                log.info(
+                logger.info(f"{i}. {model.name} (ID: {model.id})")
+                logger.info(f"  - Model size: {param_size}")
+                logger.info(f"  - Context length: {model.context_length}")
+                logger.info(
                     f"  - Pricing: {model.pricing.prompt} per prompt token, {model.pricing.completion} per completion token"
                 )
-                log.info(
+                logger.info(
                     f"  - Supported parameters: {', '.join(model.supported_parameters)}"
                 )
         else:
-            log.info("No model found matching the requirements")
+            logger.info("No model found matching the requirements")
 
     elif output == "json":
         model_json = [model.model_dump() for model in models]
-        log.info(json.dumps(model_json, indent=2))
+        logger.print_json(model_json, "Selected Models")
     elif output == "brief":
-        log.debug(f"Model selection requirements: {requirements}")
+        logger.debug(f"Model selection requirements: {requirements}")
         if len(models) > 0:
             for i, model in enumerate(models, 1):
-                log.info(f"{i}. {model.name} (ID: {model.id})")
+                logger.info(f"{i}. {model.name} (ID: {model.id})")
         else:
-            log.info("No model found matching the requirements")
+            logger.info("No model found matching the requirements")
 
 
 if __name__ == "__main__":

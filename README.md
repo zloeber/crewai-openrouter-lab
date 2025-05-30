@@ -95,8 +95,4 @@ OPENAI_API_BASE="https://openrouter.ai/api/v1"
 
 CrewAI [Memory](https://docs.crewai.com/concepts/memory) is stored locally but still requires an embedding API endpoint to function. By default this is OpenAI's endpoint. Without modification you will be left with many errors about invalid credentials in your logs for OpenAI even when you aren't using it for your LLM calls.
 
-In my examples I overwrite the memory target from a default location in your home directory to the local project, you can use some additional scripts to retrieve them.
-
-```python
-
-```
+In my examples I overwrite the memory target from a default location in your home directory to the local project. See the CrewAI docs on how to review collections in this data and do other troubleshooting around this.

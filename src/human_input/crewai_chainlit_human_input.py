@@ -9,8 +9,19 @@ from crewai.tools import BaseTool
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+from src.utils.logging import LoggerConfig, UnifiedLogger
+
 load_dotenv(override=True)
 
+# Initialize unified logger
+logger = UnifiedLogger(
+    LoggerConfig(
+        log_level="INFO",
+        log_to_file=True,
+        log_file_path="crewai_human_input.log",
+        use_rich_console=True,
+    )
+)
 
 # Store memories in project directory
 project_root = Path(__file__).parent.parent
@@ -143,12 +154,15 @@ my_crew = Crew(
 
 if __name__ == "__main__":
     input_data = CrewInput(initial_message="Hi I am James")
+    logger.print_input(input_data.model_dump())
+    logger.print_crew_status("Starting crew execution...", "info")
     result = my_crew.kickoff(inputs=input_data.model_dump())
-    print(result)
+    logger.print_output(result)
 
 
 @cl.on_chat_start
 async def on_chat_start():
+    logger.print_info("Chat session started")
     await cl.Message(
         content="Hello I am your personal Assistant. How can I help?"
     ).send()
@@ -158,8 +172,15 @@ async def on_chat_start():
 async def on_message(message: cl.Message):
     # This function will be called when user sends their first and subsequent messages
     input_data = CrewInput(initial_message=message.content)
-    result = await asyncio.to_thread(
-        lambda: my_crew.kickoff(inputs=input_data.model_dump())
-    )
+    logger.print_input(input_data.model_dump())
+    logger.print_crew_status("Processing user message...", "info")
 
-    await cl.Message(content=str(result)).send()
+    try:
+        result = await asyncio.to_thread(
+            lambda: my_crew.kickoff(inputs=input_data.model_dump())
+        )
+        logger.print_output(result)
+        await cl.Message(content=str(result)).send()
+    except Exception as e:
+        logger.print_error(f"Error processing message: {str(e)}")
+        await cl.Message(content=f"Sorry, an error occurred: {str(e)}").send()
